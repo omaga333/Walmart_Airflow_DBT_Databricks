@@ -1,0 +1,25 @@
+import json
+from pathlib import Path
+path = Path('E:/Walmart_Project/Walmart_Project/target/manifest.json')
+if not path.exists():
+    raise SystemExit('manifest not found')
+manifest = json.loads(path.read_text())
+node = manifest['nodes'].get('model.walmart_project.test')
+if not node:
+    print('NODE NOT FOUND')
+    raise SystemExit(1)
+print('unique_id:', node.get('unique_id'))
+print('resource_type:', node.get('resource_type'))
+print('original_file_path:', node.get('original_file_path'))
+print('enabled:', node.get('enabled'))
+print('config.enabled:', node.get('config', {}).get('enabled'))
+print('materialized:', node.get('config', {}).get('materialized'))
+print('path:', node.get('config', {}).get('path'))
+print('alias:', node.get('alias'))
+print('database:', node.get('database'))
+print('schema:', node.get('schema'))
+print('package_name:', node.get('package_name'))
+print('node_status:', node.get('status'))
+print('depends_on:', node.get('depends_on'))
+print('tags:', node.get('tags'))
+print('meta:', node.get('meta'))

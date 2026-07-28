@@ -1,0 +1,12 @@
+
+target/
+dbt_packages/
+logs/
+.env
+dbt_internal_packages/
+# Databricks secrets
+profiles.yml
+databricks_profile.py
+databricks_inspect.py
+airflow/dags/test.py
+airflow/logs/

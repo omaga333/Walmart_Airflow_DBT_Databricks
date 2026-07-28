@@ -1,0 +1,12 @@
+[project]
+name = "walter-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "airflow-operators>=0.16.0",
+    "databricks-sdk>=0.47.0",
+    "dbt-core>=1.12.0",
+    "dbt-databricks>=1.10.9",
+]

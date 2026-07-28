@@ -1,0 +1,34 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+#postgres Connection
+postgres Connection = postgresql://tsdbadmin:kxv64cdo85nezfz7@de4acscajk.cdlvvyxvi0.db.ghost.build:5432/tsdb?sslmode=require
+
+
+# Airflow logs
+logs/
+airflow/logs/
+
+# Airflow cache
+__pycache__/
+
+profiles.yml
+databricks_profile.py
+databricks_inspect.py
+airflow/dags/test.py
+
+
+profiles.yml
+airflow/profiles.yml
+airflow/Walmart_Project/profiles.yml
+databricks_profile.py
+databricks_inspect.py
+airflow/dags/test.py
