@@ -23,6 +23,7 @@ Once the raw data lands in the Bronze Layer, it needs heavy cleaning and modelin
 * **Storage Optimization (Ephemeral Models):** Certain intermediate calculations don't need to be saved as physical tables taking up storage space. We materialized them as `ephemeral`, meaning dbt simply injects their SQL logic as CTEs (Common Table Expressions) at runtime.
 <img width="677" height="705" alt="image" src="https://github.com/user-attachments/assets/128aa308-fb70-4f68-9e04-14de80ee74f0" />
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+
 ## 3. The Compute & Storage Engine (Databricks & Delta Lake)
 
 All the dbt transformations run on top of Databricks, which uses **Delta Lake** as the underlying storage layer.
