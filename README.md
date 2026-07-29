@@ -11,6 +11,7 @@ In a real-world system, data comes from multiple sources, and your architecture 
 * **Core Operational Data (OLTP & CDC):** The primary Walmart sales and product data lives in a SQL Server database. Instead of running heavy "Full Loads" every day that crash the database and throttle network bandwidth, we implemented **CDC (Change Data Capture)**. The system reads the database transaction logs to capture only the new inserts, updates, and deletes, pushing them into Databricks.
 * **Supplementary Data (AWS S3 & Auto Loader):** Management requested analysis on a `reviews.csv` file dropped into an AWS S3 Data Lake. To pull this securely without hardcoding AWS Access Keys in our Python code, we set up a Databricks **External Location**. This triggers AWS CloudFormation to automatically spin up secure IAM Roles, giving Databricks native, secure access to the bucket.
 * **Streaming Tables:** We used Databricks' Auto Loader to ingest the S3 data as a Stream. This creates a hidden pipeline (prefixed with `ST_`) that acts as a watcher. If a new CSV is dropped into the bucket tomorrow, Auto Loader detects it, ingests only the new file, and natively converts it into **Delta format** without reprocessing old data.
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
 ## 2. Data Transformation (The dbt Engine)
 
@@ -20,6 +21,7 @@ Once the raw data lands in the Bronze Layer, it needs heavy cleaning and modelin
 * **Compute Cost Optimization (Incremental Models):** This is a critical systems engineering move. Cloud data warehouses charge for compute time. If we used standard table materializations, dbt would drop and rebuild massive tables every day. Instead, we used the `is_incremental()` macro with highly optimized `where` and `and` clauses. Databricks now only processes the *delta* (newly arrived data) and runs an Upsert (Merge) against the target table, drastically slashing compute costs.
 * **Tracking History (SCD Type 2 & Snapshots):** If a product's price changes in Walmart, we cannot overwrite the old price, or we will corrupt historical sales reports. We implemented **dbt Snapshots** to handle Slowly Changing Dimensions (SCD Type 2). The system preserves the old record and inserts the new one with updated `valid_from` and `valid_to` timestamps.
 * **Storage Optimization (Ephemeral Models):** Certain intermediate calculations don't need to be saved as physical tables taking up storage space. We materialized them as `ephemeral`, meaning dbt simply injects their SQL logic as CTEs (Common Table Expressions) at runtime.
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
 ## 3. The Compute & Storage Engine (Databricks & Delta Lake)
 
@@ -35,6 +37,8 @@ To automate this entire platform without human intervention, we built an isolate
 * **DAG Architecture (Lineage):**
 * We used the `BashOperator` to execute dbt commands (`run`, `test`), passing the `--profiles-dir` flag to point to our secure mount.
 * We enforced strict task lineage using shift operators (`>>`). The Gold layer physically cannot execute if the Silver layer fails, and Silver won't run if the `Source Freshness` test fails.
+<img width="1280" height="494" alt="image" src="https://github.com/user-attachments/assets/f30f873e-b40e-41b4-9bb2-61d0a4a84e80" />
+<img width="1280" height="335" alt="image" src="https://github.com/user-attachments/assets/b726c1f1-2ccb-4c99-9f1f-9cfff86a768b" />
 
 
 * **Precision Scheduling & Catchup Logic:**
@@ -45,6 +49,7 @@ To automate this entire platform without human intervention, we built an isolate
 Let’s zoom in specifically on the **AWS S3** component. This part of the architecture is a perfect example of how modern cloud platforms interact securely without relying on bad practices like hardcoded passwords.
 
 Here is the deep-dive systems breakdown of the **AWS S3 Cloud Integration**:
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
 ## ☁️ Deep Dive: AWS S3 as the Data Lake & Secure Cloud Integration
 
