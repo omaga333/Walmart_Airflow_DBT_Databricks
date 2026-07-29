@@ -22,7 +22,7 @@ Once the raw data lands in the Bronze Layer, it needs heavy cleaning and modelin
 * **Tracking History (SCD Type 2 & Snapshots):** If a product's price changes in Walmart, we cannot overwrite the old price, or we will corrupt historical sales reports. We implemented **dbt Snapshots** to handle Slowly Changing Dimensions (SCD Type 2). The system preserves the old record and inserts the new one with updated `valid_from` and `valid_to` timestamps.
 * **Storage Optimization (Ephemeral Models):** Certain intermediate calculations don't need to be saved as physical tables taking up storage space. We materialized them as `ephemeral`, meaning dbt simply injects their SQL logic as CTEs (Common Table Expressions) at runtime.
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
-
+<img width="1280" height="494" alt="image" src="https://github.com/user-attachments/assets/f30f873e-b40e-41b4-9bb2-61d0a4a84e80" />
 ## 3. The Compute & Storage Engine (Databricks & Delta Lake)
 
 All the dbt transformations run on top of Databricks, which uses **Delta Lake** as the underlying storage layer.
