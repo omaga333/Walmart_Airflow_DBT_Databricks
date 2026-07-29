@@ -1,132 +1,98 @@
 # 🛒 Enterprise Retail Lakehouse: Walmart Data Platform
 
-## 📌 Project Overview
+---
+
+## 📋 Table of Contents
+
+1. [Project Overview](https://www.google.com/search?q=%23-project-overview)
+2. [System Architecture](https://www.google.com/search?q=%23-system-architecture)
+3. [Data Sources & Ingestion](https://www.google.com/search?q=%23-1-data-sources--ingestion)
+4. [Data Transformation (The dbt Engine)](https://www.google.com/search?q=%23-2-data-transformation-the-dbt-engine)
+5. [Compute & Storage Engine](https://www.google.com/search?q=%23-3-compute--storage-engine-databricks--delta-lake)
+6. [Cloud Integration (AWS S3)](https://www.google.com/search?q=%23-4-aws-s3-cloud-integration)
+7. [Orchestration (Docker & Airflow)](https://www.google.com/search?q=%23-5-isolated-orchestration-docker--airflow)
+8. [Technology Stack](https://www.google.com/search?q=%23-technologystack)
+9. [Setup & Execution](https://www.google.com/search?q=%23-setup--execution)
+
+---
+
+## 🎯 1. Project Overview
 
 This project is an end-to-end, production-grade **Medallion Lakehouse Platform** designed to process highly fragmented retail data. The platform integrates real-time transactional data from a live Agentic Database alongside asynchronous flat files from an AWS S3 Data Lake into a unified, AI-ready Databricks environment.
 
-Rather than focusing solely on data movement, this architecture prioritizes **Cloud Security (Zero-hardcoded credentials), Compute Cost Optimization, and Environment Isolation**.
+> **Core Engineering Pillars:** Cloud Security (Zero-hardcoded credentials), Compute Cost Optimization, and Complete Environment Isolation.
 
-## 🏗️ System Architecture
+---
 
+## 🏗️ 2. System Architecture
 <img width="1446" height="720" alt="image" src="https://github.com/user-attachments/assets/55060de9-d297-475b-8d03-45a579465b00" />
 
-### 1. The Data Sources
+---
 
-* **Agentic DB (PostgreSQL-based):** A live operational database powering a SQL Chatbot. Changes are captured incrementally via **CDC (Change Data Capture)**.
-* **AWS S3 Data Lake:** An asynchronous landing zone for external supplementary files (e.g., product reviews, logs).
+## 📥 3. Data Sources & Ingestion
 
-### 2. Medallion Data Modeling (dbt & Databricks)
+* **⚡ Agentic DB (PostgreSQL-based):** A live operational database powering a SQL Chatbot. Changes are captured incrementally via **CDC (Change Data Capture)**.
+<img width="1774" height="887" alt="ChatGPT-Image-Apr-29-2026-04_09_02-PM (1)" src="https://github.com/user-attachments/assets/d7f1e5f3-38ce-4cf5-a217-d9505d14d8bc" />
 
-* 🥉 **Bronze Layer (Ingestion):**
-* Ingests CDC streams from the Agentic DB.
-* Utilizes **Databricks Auto Loader (Streaming Tables)** to efficiently ingest only new files dropped into AWS S3, writing them natively in Delta format.
+* **📂 AWS S3 Data Lake:** An asynchronous landing zone for external supplementary files (e.g., product reviews, logs).
+<img width="1280" height="720" alt="maxresdefault" src="https://github.com/user-attachments/assets/24500968-f91d-4ab1-b624-a742882a6e46" />
 
+* 
+* **🥉 Bronze Layer:** Ingests CDC streams and utilizes **Databricks Auto Loader (Streaming Tables)** to efficiently ingest only new files dropped into AWS S3, writing them natively in Delta format.
 
-* 🥈 **Silver Layer (Cleansing & OBT):**
-* Standardizes data types, handles deduplication, and enforces schema consistency.
-* **One-Big Table (OBT):** Complex relational data is denormalized into a highly optimized OBT. This architectural decision eliminates expensive runtime joins and massively accelerates downstream BI queries.
+---
 
+## 🔄 4. Data Transformation (The dbt Engine)
 
-* 🥇 **Gold Layer (Analytics & AI-Ready):**
-* A refined **Star Schema** built on top of the OBT.
-* Utilizes **SCD Type 2 (dbt Snapshots)** to track historical changes in business entities (e.g., product price changes) using `valid_from` and `valid_to` timestamps.
+Once the raw data lands in the Bronze Layer, it undergoes heavy cleaning and modeling using **dbt-core**.
 
-
-
-## ⚙️ Key Engineering Decisions
-
-### ☁️ Secure Cloud Integration (Zero-Hardcoded Keys)
-
-Connecting Databricks to AWS S3 was handled using strict IAM security protocols. Instead of hardcoding AWS Access Keys, I configured a **Databricks External Location** which deployed an **AWS CloudFormation** stack. This established a secure IAM Trust Relationship, allowing Databricks to read S3 buckets securely without exposing credentials.
-
-### 💰 Compute Cost Optimization
-
-Cloud data warehouses charge by compute time. To minimize costs:
-
-* Implemented **dbt Incremental Models** (`is_incremental()`) ensuring that the Databricks cluster only processes and upserts newly arrived data (the delta) rather than performing full table scans.
-* Leveraged **Ephemeral Materializations** for intermediate transformations to save storage space.
-
-## 2. Data Transformation (The dbt Engine)
-
-Once the raw data lands in the Bronze Layer, it needs heavy cleaning and modeling. Instead of writing massive, unmaintainable PySpark scripts, we used **dbt-core** to handle the logic.
-
-* **Cleansing & Formatting (Silver Layer):** We split this layer into a Technical Silver (for casting data types and deduplication) and a Business Silver (for actual business logic and schema enforcement).
-* **Compute Cost Optimization (Incremental Models):** This is a critical systems engineering move. Cloud data warehouses charge for compute time. If we used standard table materializations, dbt would drop and rebuild massive tables every day. Instead, we used the `is_incremental()` macro with highly optimized `where` and `and` clauses. Databricks now only processes the *delta* (newly arrived data) and runs an Upsert (Merge) against the target table, drastically slashing compute costs.
-* **Tracking History (SCD Type 2 & Snapshots):** If a product's price changes in Walmart, we cannot overwrite the old price, or we will corrupt historical sales reports. We implemented **dbt Snapshots** to handle Slowly Changing Dimensions (SCD Type 2). The system preserves the old record and inserts the new one with updated `valid_from` and `valid_to` timestamps.
-* **Storage Optimization (Ephemeral Models):** Certain intermediate calculations don't need to be saved as physical tables taking up storage space. We materialized them as `ephemeral`, meaning dbt simply injects their SQL logic as CTEs (Common Table Expressions) at runtime.
+* 🧹 **Silver Layer (Cleansing & OBT):** Split into Technical Silver (casting data types and deduplication) and Business Silver (business logic and schema enforcement). Complex relational data is denormalized into a **One-Big Table (OBT)** to eliminate expensive runtime joins and accelerate BI queries.
+* 💰 **Compute Cost Optimization (Incremental Models):** Uses the `is_incremental()` macro with optimized logic so Databricks processes only the *delta* (new data) and executes an Upsert (Merge) against the target table.
+* ⏳ **Tracking History (SCD Type 2 & Snapshots):** Implements **dbt Snapshots** to track historical changes (e.g., product price changes) using `valid_from` and `valid_to` timestamps.
+* 💾 **Storage Optimization (Ephemeral Models):** Intermediate transformations are materialized as `ephemeral` to keep the data warehouse clean, avoiding physical table writes and injecting SQL logic as CTEs at runtime.
 <img width="677" height="705" alt="image" src="https://github.com/user-attachments/assets/128aa308-fb70-4f68-9e04-14de80ee74f0" />
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+---
 
-## 3. The Compute & Storage Engine (Databricks & Delta Lake)
+## ⚡ 5. Compute & Storage Engine (Databricks & Delta Lake)
 
-All the dbt transformations run on top of Databricks, which uses **Delta Lake** as the underlying storage layer.
-Standard Data Lakes (like pure S3 or Azure Data Lake) do not allow you to easily UPDATE or DELETE rows inside Parquet files. By using the Delta format, we bring **ACID transactions** to cloud storage, which is exactly what makes our dbt Incremental models and Snapshots possible under the hood.
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+All transformations run on **Databricks** backed by **Delta Lake**.
 
-## 4.🐳 Isolated Orchestration (Docker + Airflow)
+* Brings **ACID transactions** to cloud object storage, making incremental models and snapshots safe and reliable under the hood.
 
-To automate this entire platform without human intervention, we built an isolated infrastructure using Apache Airflow.
+---
 
-* **Containerization (Custom Docker Image):** Good systems engineers don't install tools directly on the host machine. We utilized Docker, writing a custom `Dockerfile` that extends the official Airflow image to install `dbt-core` and the `dbt-databricks` adapter. This guarantees the environment will run identically on any server in the world without dependency conflicts.
-* **Credential Security (Bind Mounts):** How does dbt inside a Docker container authenticate with Databricks without baking the access token into the Docker Image (which is a massive security risk)? We used **Docker Bind Mounts**. We kept the `profiles.yml` file (containing the secrets) safely on the host server and dynamically mounted it to `/opt/airflow/profiles` only at runtime.
-* **DAG Architecture (Lineage):**
-* We used the `BashOperator` to execute dbt commands (`run`, `test`), passing the `--profiles-dir` flag to point to our secure mount.
-* We enforced strict task lineage using shift operators (`>>`). The Gold layer physically cannot execute if the Silver layer fails, and Silver won't run if the `Source Freshness` test fails.
+## ☁️ 6. AWS S3 Cloud Integration
+
+AWS S3 serves as the scalable object storage layer for semi-structured data (`reviews.csv`).
+
+* 🔒 **Secure Access (IAM + External Locations):** Eliminated hardcoded AWS Access Keys by configuring a Databricks External Location backed by an **AWS CloudFormation** stack to establish a secure IAM Trust Relationship.
+* 🚀 **Auto Loader Streaming:** Automatically detects and ingests new files from S3 with built-in checkpointing.
+
+---
+
+## 🐳 7. Isolated Orchestration (Docker & Airflow)
+
+* 📦 **Containerization:** Built a custom `Dockerfile` extending the official Airflow image to package `dbt-core` and `dbt-databricks`.
+* 🔑 **Credential Security:** Utilized **Docker Bind Mounts** to safely mount the `profiles.yml` file from the host server at runtime, avoiding credential leakage inside the image.
+* 🔗 **Task Lineage & Safety:** Strict task dependency ordering (`>>`) combined with `catchup=False` and UTC scheduling via `pendulum` (`0 11 * * *`) to prevent cluster crashes and timezone drifts.
 <img width="1280" height="494" alt="image" src="https://github.com/user-attachments/assets/f30f873e-b40e-41b4-9bb2-61d0a4a84e80" />
 <img width="1280" height="335" alt="image" src="https://github.com/user-attachments/assets/b726c1f1-2ccb-4c99-9f1f-9cfff86a768b" />
+---
 
+## 🛠️ 8. Technology Stack
 
-* **Precision Scheduling & Catchup Logic:**
-* The DAG is scheduled to run daily at 11:00 AM using cron syntax (`0 11 * * *`).
-* We utilized the `pendulum` library to lock the timezone to UTC, preventing server timezone drifts from breaking the schedule.
-* **The Catchup Rule:** We explicitly set `catchup=False`. If the Airflow server goes down for a month and comes back online, a default Airflow setup would attempt to run 30 back-to-back pipelines to "catch up," which would overwhelm the Databricks cluster. Setting this to `False` ensures it only executes the current and future runs.
+* 💻 **Compute & Storage:** Databricks, Delta Lake, Apache Spark
+* 🔄 **Transformation:** dbt (Data Build Tool), SQL, Python
+* ⚙️ **Orchestration:** Apache Airflow
+* ☁️ **Infrastructure:** AWS S3, AWS IAM, CloudFormation
+* 🐳 **Containerization:** Docker
 
-Let’s zoom in specifically on the **AWS S3** component. This part of the architecture is a perfect example of how modern cloud platforms interact securely without relying on bad practices like hardcoded passwords.
+---
 
-Here is the deep-dive systems breakdown of the **AWS S3 Cloud Integration**:
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+## 🚀 9. Setup & Execution
 
-## ☁️ AWS S3 Data Lake Integration
-
-AWS S3 is used as the scalable Object Storage layer for semi-structured data (`reviews.csv`). The main challenge was not storage, but building a secure connection between S3 and Databricks.
-
-### 🔹 Secure Cloud Access (IAM + External Locations)
-
-Instead of using hardcoded AWS Access Keys (security risk), we implemented a secure **Trust Relationship** using Databricks External Locations:
-
-- Databricks generated a secure setup flow through AWS CloudFormation.
-- CloudFormation automatically created IAM Roles and Policies.
-- Databricks assumes the IAM Role to access S3 securely without storing credentials.
-
-### 🔹 Data Ingestion with Auto Loader
-
-After establishing secure access:
-
-- Created a Databricks Streaming Table connected to the S3 External Location.
-- Used **Auto Loader** with checkpointing to track processed files.
-- Only new files uploaded to S3 are automatically detected and ingested.
-- Data is stored as optimized Delta Tables.
-
-### 🔹 Benefits
-
-This architecture provides:
-- Secure cloud integration using IAM.
-- Incremental data loading instead of full reloads.
-- Scalable ingestion for future data growth.
-- Independent S3 pipeline execution without affecting the main SQL Server CDC pipeline.
-
-
-## 🛠️ Technology Stack
-
-* **Compute & Storage:** Databricks, Delta Lake
-* **Transformation:** dbt (Data Build Tool), SQL, Python
-* **Orchestration:** Apache Airflow
-* **Infrastructure:** AWS S3, AWS IAM, CloudFormation
-* **Containerization:** Docker
-
-## 🚀 Setup & Execution
-
-**1. Clone the repository**
+### Step 1: Clone the repository
 
 ```bash
 git clone https://github.com/your-username/walmart-retail-lakehouse.git
@@ -134,8 +100,9 @@ cd walmart-retail-lakehouse
 
 ```
 
-**2. Configure your Databricks Profile**
-Create a `profiles.yml` file on your local machine (outside the project directory for security):
+### Step 2: Configure your Databricks Profile
+
+Create a `profiles.yml` file securely on your host machine:
 
 ```yaml
 walmart_project:
@@ -152,8 +119,9 @@ walmart_project:
 
 ```
 
-**3. Build and Start the Dockerized Airflow Environment**
-Ensure you update the `docker-compose.yml` to bind-mount your local `profiles.yml` path to `/opt/airflow/profiles`.
+### Step 3: Build and Run via Docker Compose
+
+Ensure your `docker-compose.yml` bind-mounts your local `profiles.yml` to `/opt/airflow/profiles`.
 
 ```bash
 docker-compose build
@@ -161,7 +129,11 @@ docker-compose up -d
 
 ```
 
-**4. Access Airflow**
+### Step 4: Access Airflow
 
-* Navigate to `http://localhost:8080`
-* Trigger the `walmart_lakehouse_pipeline` DAG to execute the end-to-end ingestion and transformation workflow.
+* Open `http://localhost:8080` in your browser.
+* Trigger the `walmart_lakehouse_pipeline` DAG.
+
+---
+
+#DataEngineering #Databricks #Spark #Lakehouse #DeltaLake #dbt #ApacheAirflow #AWS #DataArchitecture #Python #SQL
